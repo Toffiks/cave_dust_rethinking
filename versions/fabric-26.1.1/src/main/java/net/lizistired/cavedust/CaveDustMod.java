@@ -1,0 +1,26 @@
+package net.lizistired.cavedust;
+
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
+import net.minecraft.core.Registry;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+
+public final class CaveDustMod implements ModInitializer {
+    public static final String MOD_ID = "cavedust";
+    public static final SimpleParticleType CAVE_DUST_MOTE = FabricParticleTypes.simple();
+    public static final SimpleParticleType CAVE_DUST_PLUME = FabricParticleTypes.simple();
+
+    @Override
+    public void onInitialize() {
+        Registry.register(
+                BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MOD_ID, "cave_dust_mote"),
+                CAVE_DUST_MOTE);
+        Registry.register(
+                BuiltInRegistries.PARTICLE_TYPE,
+                Identifier.fromNamespaceAndPath(MOD_ID, "cave_dust_plume"),
+                CAVE_DUST_PLUME);
+    }
+}

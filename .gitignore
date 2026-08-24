@@ -1,0 +1,23 @@
+# Gradle and build output
+.gradle/
+**/.gradle/
+**/build/
+**/run/
+
+# IDE files
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+*.iml
+
+# Logs and local configuration
+*.log
+logs/
+**/logs/
+config/
+**/config/
+
+# Operating-system files
+.DS_Store
+Thumbs.db

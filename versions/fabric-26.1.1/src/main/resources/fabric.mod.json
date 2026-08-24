@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "cavedust",
+  "version": "${version}",
+  "name": "Cave Dust Rethinking",
+  "description": "Rethinking version Cave Dust. Adds underground dust whose density scales with depth.",
+  "authors": ["LizIsTired", "Toffiks"],
+  "license": "MPL-2.0",
+  "icon": "assets/cavedust/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["net.lizistired.cavedust.CaveDustMod"],
+    "client": ["net.lizistired.cavedust.CaveDustClient"],
+    "modmenu": ["net.lizistired.cavedust.CaveDustModMenuFactory"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "26.1.1",
+    "java": ">=25"
+  },
+  "suggests": {
+    "modmenu": ">=18.0.0"
+  }
+}
