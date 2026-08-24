@@ -11,7 +11,6 @@
   "debug.cavedust.toggle.false": "[Пещерная пыль] Частицы отключены",
   "debug.cavedust.reload": "[Пещерная пыль] Конфигурация перезагружена",
   "menu.cavedust.title": "Cave Dust Rethinking",
-  "menu.cavedust.title.advanced": "Расширенные настройки Cave Dust Rethinking",
   "menu.cavedust.global.false": "Пещерная пыль: отключена",
   "menu.cavedust.global.true": "Пещерная пыль: включена",
   "menu.cavedust.global.tooltip.false": "Включить частицы пещерной пыли?",

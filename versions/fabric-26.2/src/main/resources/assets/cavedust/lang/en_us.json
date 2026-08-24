@@ -10,7 +10,6 @@
   "debug.cavedust.toggle.false": "(Cave Dust) Disabled particles",
   "debug.cavedust.reload": "(Cave Dust) Reloaded config",
   "menu.cavedust.title": "Cave Dust Rethinking",
-  "menu.cavedust.title.advanced": "Cave Dust Rethinking Advanced Options",
   "menu.cavedust.global.false": "Cave Dust Rethinking: Disabled",
   "menu.cavedust.global.true": "Cave Dust Rethinking: Enabled",
   "menu.cavedust.global.tooltip.false": "Enable cave dust particles?",
