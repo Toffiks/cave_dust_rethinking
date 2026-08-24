@@ -19,8 +19,8 @@ final class CaveDustConfigScreen extends Screen {
     @Override
     protected void init() {
         config.reload();
-        int left = this.width / 2 - 100;
-        int row = this.height / 4 + 14 + 36;
+        int left = (this.width - 200) / 2;
+        int row = (this.height - (20 + 2 * 24)) / 2;
 
         Button enabled = Button.builder(enabledText(), button -> {
                     config.toggleEnabled();

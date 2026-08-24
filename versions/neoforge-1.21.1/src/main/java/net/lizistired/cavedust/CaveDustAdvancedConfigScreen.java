@@ -22,8 +22,8 @@ final class CaveDustAdvancedConfigScreen extends Screen {
     @Override
     protected void init() {
         config.reload();
-        int left = this.width / 2 - 100;
-        int row = this.height / 4 + 14 + 24;
+        int left = (this.width - 200) / 2;
+        int row = (this.height - (20 + 4 * 24)) / 2;
 
         IntSlider amount = new IntSlider(left, row, 1, 100, config.particleMultiplier(),
                 "menu.cavedust.particlemultiplier", config::setParticleMultiplier);
@@ -46,7 +46,7 @@ final class CaveDustAdvancedConfigScreen extends Screen {
         radius.setTooltip(Tooltip.create(Component.translatable("menu.cavedust.width.tooltip")));
         this.addRenderableWidget(radius);
 
-        row += 120;
+        row += 24;
         this.addRenderableWidget(Button.builder(Component.translatable("menu.cavedust.reset"), button -> {
                     config.reset();
                     this.minecraft.setScreen(new CaveDustAdvancedConfigScreen(parent));
@@ -72,7 +72,6 @@ final class CaveDustAdvancedConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 30, 0xFFFFFF);
     }
