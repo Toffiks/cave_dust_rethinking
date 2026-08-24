@@ -35,7 +35,7 @@ final class CaveDustConfigScreen extends Screen {
         row += 24;
         this.addRenderableWidget(Button.builder(
                         Component.translatable("menu.cavedust.title.advanced"),
-                        button -> this.minecraft.setScreenAndShow(new CaveDustAdvancedConfigScreen(parent)))
+                        button -> this.minecraft.gui.setScreen(new CaveDustAdvancedConfigScreen(this)))
                 .bounds(left, row, 200, 20)
                 .build());
 
@@ -56,7 +56,7 @@ final class CaveDustConfigScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreenAndShow(parent);
+        this.minecraft.gui.setScreen(parent);
     }
 
     @Override

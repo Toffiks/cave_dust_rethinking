@@ -49,7 +49,7 @@ final class CaveDustAdvancedConfigScreen extends Screen {
         row += 120;
         this.addRenderableWidget(Button.builder(Component.translatable("menu.cavedust.reset"), button -> {
                     config.reset();
-                    this.minecraft.setScreenAndShow(new CaveDustAdvancedConfigScreen(parent));
+                    this.minecraft.gui.setScreen(new CaveDustAdvancedConfigScreen(parent));
                 })
                 .bounds(left, row, 200, 20)
                 .tooltip(Tooltip.create(Component.translatable("menu.cavedust.reset.tooltip")))
@@ -67,7 +67,7 @@ final class CaveDustAdvancedConfigScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreenAndShow(parent);
+        this.minecraft.gui.setScreen(parent);
     }
 
     @Override
