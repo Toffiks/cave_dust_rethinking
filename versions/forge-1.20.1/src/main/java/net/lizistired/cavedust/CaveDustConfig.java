@@ -15,10 +15,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+/** Loads, validates and atomically saves the client-side Cave Dust settings. */
 final class CaveDustConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaveDustMod.MOD_ID);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -26,8 +30,6 @@ final class CaveDustConfig {
 
     private final Path path;
     private int width = 10;
-    private int height = 10;
-    private int velocityRandomness = 0;
     private boolean caveDustEnabled = true;
     private boolean seaLevelCheck = true;
     private boolean superFlatStatus = false;
@@ -35,8 +37,9 @@ final class CaveDustConfig {
     private float lowerLimit = -64.0F;
     private int particleMultiplier = 14;
     private int listNumber = 0;
-    private int particleMultiplierMultiplier = 10;
     private String newId = DEFAULT_PARTICLE_ID;
+    private transient ParticleOptions selectedParticle;
+    private transient boolean dirty;
 
     private CaveDustConfig(Path path) {
         this.path = path;
@@ -49,12 +52,13 @@ final class CaveDustConfig {
     }
 
     void reload() {
-        if (Files.isReadable(path)) {
+        boolean readable = Files.isReadable(path);
+        boolean needsSave = !readable;
+        applyDefaults();
+        if (readable) {
             try (Reader reader = Files.newBufferedReader(path)) {
                 JsonObject values = JsonParser.parseReader(reader).getAsJsonObject();
                 width = getInt(values, "width", width);
-                height = getInt(values, "height", height);
-                velocityRandomness = getInt(values, "velocityRandomness", velocityRandomness);
                 caveDustEnabled = getBoolean(values, "caveDustEnabled", caveDustEnabled);
                 seaLevelCheck = getBoolean(values, "seaLevelCheck", seaLevelCheck);
                 superFlatStatus = getBoolean(values, "superFlatStatus", superFlatStatus);
@@ -62,21 +66,29 @@ final class CaveDustConfig {
                 lowerLimit = getFloat(values, "lowerLimit", lowerLimit);
                 particleMultiplier = getInt(values, "particleMultiplier", particleMultiplier);
                 listNumber = getInt(values, "listNumber", listNumber);
-                particleMultiplierMultiplier = getInt(values, "particleMultiplierMultiplier", particleMultiplierMultiplier);
                 newId = getString(values, "newId", getString(values, "particle", newId));
+                needsSave = values.has("height")
+                        || values.has("velocityRandomness")
+                        || values.has("particleMultiplierMultiplier")
+                        || values.has("particle");
             } catch (Exception exception) {
                 LOGGER.warn("Invalid Cave Dust configuration; using safe values", exception);
+                needsSave = true;
             }
         }
-        sanitize();
-        save();
+        selectedParticle = null;
+        boolean sanitized = sanitize();
+        dirty = needsSave || sanitized;
+        saveIfDirty();
     }
 
-    private void save() {
+    void saveIfDirty() {
+        if (!dirty) {
+            return;
+        }
+
         JsonObject values = new JsonObject();
         values.addProperty("width", width);
-        values.addProperty("height", height);
-        values.addProperty("velocityRandomness", velocityRandomness);
         values.addProperty("caveDustEnabled", caveDustEnabled);
         values.addProperty("seaLevelCheck", seaLevelCheck);
         values.addProperty("superFlatStatus", superFlatStatus);
@@ -84,21 +96,39 @@ final class CaveDustConfig {
         values.addProperty("lowerLimit", lowerLimit);
         values.addProperty("particleMultiplier", particleMultiplier);
         values.addProperty("listNumber", listNumber);
-        values.addProperty("particleMultiplierMultiplier", particleMultiplierMultiplier);
         values.addProperty("newId", newId);
+        Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try {
-            Files.createDirectories(path.getParent());
-            try (Writer writer = Files.newBufferedWriter(path)) {
+            Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (Writer writer = Files.newBufferedWriter(
+                    temporary,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE)) {
                 GSON.toJson(values, writer);
             }
+            try {
+                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+            dirty = false;
         } catch (IOException exception) {
             LOGGER.warn("Could not save Cave Dust configuration to {}", path, exception);
+            try {
+                Files.deleteIfExists(temporary);
+            } catch (IOException ignored) {
+                // The next successful save will replace the temporary file.
+            }
         }
     }
 
     boolean toggleEnabled() {
         caveDustEnabled = !caveDustEnabled;
-        save();
+        dirty = true;
         return caveDustEnabled;
     }
 
@@ -114,7 +144,7 @@ final class CaveDustConfig {
         int safeValue = clamp(value, 1, 100);
         if (particleMultiplier != safeValue) {
             particleMultiplier = safeValue;
-            save();
+            dirty = true;
         }
     }
 
@@ -122,29 +152,35 @@ final class CaveDustConfig {
         int safeValue = clamp(value, 1, 50);
         if (width != safeValue) {
             width = safeValue;
-            save();
+            dirty = true;
         }
     }
 
     ParticleOptions particle() {
+        if (selectedParticle != null) {
+            return selectedParticle;
+        }
+
         ResourceLocation location = ResourceLocation.tryParse(newId);
         ParticleType<?> type = location == null ? null : ForgeRegistries.PARTICLE_TYPES.getValue(location);
         if (type instanceof ParticleOptions options) {
-            return options;
+            selectedParticle = options;
+            return selectedParticle;
         }
 
         LOGGER.warn("Unknown or parameterized particle '{}'; falling back to {}", newId, DEFAULT_PARTICLE_ID);
         selectDefaultParticle();
-        save();
+        dirty = true;
         type = ForgeRegistries.PARTICLE_TYPES.getValue(ResourceLocation.tryParse(newId));
         if (type instanceof ParticleOptions options) {
-            return options;
+            selectedParticle = options;
+            saveIfDirty();
+            return selectedParticle;
         }
         throw new IllegalStateException("Cave Dust particle type is not registered: " + newId);
     }
 
     String particleName() {
-        particle();
         return newId;
     }
 
@@ -153,21 +189,26 @@ final class CaveDustConfig {
         for (int attempts = 0; attempts < particleIds.size(); attempts++) {
             listNumber = (listNumber + 1) % particleIds.size();
             String candidate = particleIds.get(listNumber).toString();
-            if (resolveParticle(candidate) != null) {
+            ParticleOptions options = resolveParticle(candidate);
+            if (options != null) {
                 newId = candidate;
-                save();
+                selectedParticle = options;
+                dirty = true;
                 return;
             }
         }
 
         selectDefaultParticle();
-        save();
+        dirty = true;
     }
 
     void reset() {
+        applyDefaults();
+        dirty = true;
+    }
+
+    private void applyDefaults() {
         width = 10;
-        height = 10;
-        velocityRandomness = 0;
         caveDustEnabled = true;
         seaLevelCheck = true;
         superFlatStatus = false;
@@ -175,12 +216,18 @@ final class CaveDustConfig {
         lowerLimit = -64.0F;
         particleMultiplier = 14;
         listNumber = 0;
-        particleMultiplierMultiplier = 10;
         newId = DEFAULT_PARTICLE_ID;
-        save();
+        selectedParticle = null;
     }
 
-    private void sanitize() {
+    private boolean sanitize() {
+        int previousWidth = width;
+        int previousMultiplier = particleMultiplier;
+        float previousLowerLimit = lowerLimit;
+        float previousUpperLimit = upperLimit;
+        int previousListNumber = listNumber;
+        String previousId = newId;
+
         width = clamp(width, 1, 50);
         particleMultiplier = clamp(particleMultiplier, 1, 100);
         if (!Float.isFinite(lowerLimit) || !Float.isFinite(upperLimit) || upperLimit <= lowerLimit) {
@@ -198,6 +245,12 @@ final class CaveDustConfig {
         } else {
             selectDefaultParticle();
         }
+        return width != previousWidth
+                || particleMultiplier != previousMultiplier
+                || Float.compare(lowerLimit, previousLowerLimit) != 0
+                || Float.compare(upperLimit, previousUpperLimit) != 0
+                || listNumber != previousListNumber
+                || !java.util.Objects.equals(newId, previousId);
     }
 
     private ParticleOptions resolveParticle(String id) {
@@ -223,6 +276,7 @@ final class CaveDustConfig {
 
     private void selectDefaultParticle() {
         newId = DEFAULT_PARTICLE_ID;
+        selectedParticle = null;
         int defaultIndex = indexOfParticle(DEFAULT_PARTICLE_ID, particleIds());
         listNumber = Math.max(defaultIndex, 0);
     }

@@ -1,11 +1,7 @@
 {
-  "category.cavedust.controls": "Cave Dust Rethinking",
   "key.category.cavedust.spook": "Cave Dust Rethinking",
   "key.cavedust.toggle": "Toggle cave dust",
   "key.cavedust.reload": "Reload Cave Dust Rethinking config",
-  "message.cavedust.enabled": "Cave dust: enabled",
-  "message.cavedust.disabled": "Cave dust: disabled",
-  "message.cavedust.reloaded": "Cave Dust Rethinking config reloaded",
   "debug.cavedust.toggle.true": "(Cave Dust) Enabled particles",
   "debug.cavedust.toggle.false": "(Cave Dust) Disabled particles",
   "debug.cavedust.reload": "(Cave Dust) Reloaded config",
@@ -20,6 +16,6 @@
   "menu.cavedust.reset.tooltip": "Are you sure you want to reset all settings?",
   "menu.cavedust.particlemultiplier": "Particle amount: %s",
   "menu.cavedust.particlemultiplier.tooltip": "Amount of particles to spawn at any given depth.",
-  "menu.cavedust.particle": "Particle: ",
+  "menu.cavedust.particle": "Particle: %s",
   "menu.cavedust.particle.tooltip": "Particle to spawn. Click to cycle."
 }

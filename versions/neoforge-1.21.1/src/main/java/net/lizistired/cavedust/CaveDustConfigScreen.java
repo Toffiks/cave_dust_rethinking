@@ -21,7 +21,6 @@ final class CaveDustConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        config.reload();
         int left = (this.width - 200) / 2;
         int row = (this.height - (20 + 5 * 24)) / 2;
 
@@ -86,12 +85,19 @@ final class CaveDustConfigScreen extends Screen {
     }
 
     private Component particleText() {
-        return Component.literal("Particle: " + config.particleName());
+        return Component.translatable("menu.cavedust.particle", config.particleName());
     }
 
     @Override
     public void onClose() {
+        config.saveIfDirty();
         this.minecraft.setScreen(parent);
+    }
+
+    @Override
+    public void removed() {
+        config.saveIfDirty();
+        super.removed();
     }
 
     @Override

@@ -1,12 +1,7 @@
 {
-  "category.cavedust.controls": "Cave Dust Rethinking",
   "key.category.cavedust.spook": "Пещерная пыль",
-  "category.cavedust.spook": "Пещерная пыль",
   "key.cavedust.toggle": "Включить/выключить пыль в пещерах",
   "key.cavedust.reload": "Перезагрузить настройки Cave Dust Rethinking",
-  "message.cavedust.enabled": "Пыль в пещерах: включена",
-  "message.cavedust.disabled": "Пыль в пещерах: выключена",
-  "message.cavedust.reloaded": "Настройки Cave Dust Rethinking перезагружены",
   "debug.cavedust.toggle.true": "[Пещерная пыль] Частицы включены",
   "debug.cavedust.toggle.false": "[Пещерная пыль] Частицы отключены",
   "debug.cavedust.reload": "[Пещерная пыль] Конфигурация перезагружена",
@@ -21,6 +16,6 @@
   "menu.cavedust.reset.tooltip": "Сбросить все настройки?",
   "menu.cavedust.particlemultiplier": "Количество частиц: %s",
   "menu.cavedust.particlemultiplier.tooltip": "Количество частиц на заданной глубине.",
-  "menu.cavedust.particle": "Частица: ",
+  "menu.cavedust.particle": "Частица: %s",
   "menu.cavedust.particle.tooltip": "Тип частицы. Нажмите для переключения."
 }

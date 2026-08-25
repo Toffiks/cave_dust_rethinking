@@ -1,24 +1,17 @@
 package net.lizistired.cavedust;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 
 final class CaveDustMoteParticle extends TextureSheetParticle {
     private static final int ENVIRONMENT_CHECK_INTERVAL = 5;
 
     private final SpriteSet sprites;
-    private final BlockPos.MutableBlockPos environmentCursor = new BlockPos.MutableBlockPos();
     private int environmentCheckDelay;
     private boolean cachedSeesSky;
     private double cachedHeatStrength;
@@ -45,24 +38,30 @@ final class CaveDustMoteParticle extends TextureSheetParticle {
         this.setSpriteFromAge(sprites);
         this.alpha = 1.0F - (float) this.age / (float) this.lifetime;
 
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null) {
-            double distanceSquared = square(this.x - player.getX())
-                    + square(this.y - player.getY())
-                    + square(this.z - player.getZ());
+        CaveDustParticleContext.PlayerSnapshot player = CaveDustParticleContext.player();
+        if (player.available()) {
+            double distanceSquared = square(this.x - player.x())
+                    + square(this.y - player.y())
+                    + square(this.z - player.z());
             if (distanceSquared < 9.0D) {
                 double distance = Math.sqrt(distanceSquared);
                 double influence = (1.0D - distance / 3.0D) * 0.1D;
-                Vec3 movement = player.getDeltaMovement();
-                this.xd += movement.x * influence;
-                this.yd += movement.y * influence * 0.2D;
-                this.zd += movement.z * influence;
+                this.xd += player.movementX() * influence;
+                this.yd += player.movementY() * influence * 0.2D;
+                this.zd += player.movementZ() * influence;
             }
         }
 
         if (environmentCheckDelay-- <= 0) {
-            updateEnvironmentCache();
-            environmentCheckDelay = ENVIRONMENT_CHECK_INTERVAL - 1;
+            CaveDustParticleContext.EnvironmentSample environment =
+                    CaveDustParticleContext.environmentAt(this.x, this.y, this.z);
+            if (environment.available()) {
+                cachedSeesSky = environment.seesSky();
+                cachedHeatStrength = environment.heatStrength();
+                environmentCheckDelay = ENVIRONMENT_CHECK_INTERVAL - 1;
+            } else {
+                environmentCheckDelay = 0;
+            }
         }
 
         if (cachedSeesSky) {
@@ -84,33 +83,6 @@ final class CaveDustMoteParticle extends TextureSheetParticle {
             this.zd += (this.random.nextFloat() - 0.5F) * lift * 0.3D;
         }
         this.yd = Math.min(this.yd, 0.05D);
-    }
-
-    private void updateEnvironmentCache() {
-        int blockX = (int) Math.floor(this.x);
-        int blockY = (int) Math.floor(this.y);
-        int blockZ = (int) Math.floor(this.z);
-        environmentCursor.set(blockX, blockY, blockZ);
-        cachedSeesSky = this.level.canSeeSky(environmentCursor);
-
-        cachedHeatStrength = heatValueAt(blockX, blockY, blockZ)
-                + heatValueAt(blockX, blockY + 1, blockZ) * 0.5D
-                + heatValueAt(blockX, blockY - 1, blockZ) * 0.5D
-                + heatValueAt(blockX, blockY, blockZ - 1) * 0.5D
-                + heatValueAt(blockX, blockY, blockZ + 1) * 0.5D
-                + heatValueAt(blockX + 1, blockY, blockZ) * 0.5D
-                + heatValueAt(blockX - 1, blockY, blockZ) * 0.5D;
-    }
-
-    private double heatValueAt(int x, int y, int z) {
-        environmentCursor.set(x, y, z);
-        BlockState state = this.level.getBlockState(environmentCursor);
-        if (state.is(Blocks.LAVA)) return 0.4D;
-        if (state.is(Blocks.MAGMA_BLOCK)) return 0.2D;
-        if (state.is(Blocks.CAMPFIRE)) return 0.25D;
-        if (state.is(Blocks.SOUL_CAMPFIRE)) return 0.2D;
-        if (state.is(Blocks.TORCH) || state.is(Blocks.WALL_TORCH)) return 0.1D;
-        return 0.0D;
     }
 
     private static double square(double value) {

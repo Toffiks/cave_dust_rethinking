@@ -62,12 +62,15 @@ public final class CaveDustClient {
 
     private void createCaveDust(Minecraft client) {
         if (client.player == null || client.level == null) {
+            CaveDustParticleContext.clear();
             return;
         }
 
+        CaveDustParticleContext.update(client);
         LocalPlayer player = client.player;
         if (TOGGLE_KEY.consumeClick()) {
             boolean enabled = config.toggleEnabled();
+            config.saveIfDirty();
             player.displayClientMessage(Component.translatable("debug.cavedust.toggle." + enabled), true);
         }
         if (RELOAD_KEY.consumeClick()) {

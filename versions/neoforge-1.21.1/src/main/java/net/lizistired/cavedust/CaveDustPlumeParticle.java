@@ -1,15 +1,12 @@
 package net.lizistired.cavedust;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.world.phys.Vec3;
 
 final class CaveDustPlumeParticle extends TextureSheetParticle {
     private CaveDustPlumeParticle(ClientLevel level, double x, double y, double z,
@@ -29,17 +26,23 @@ final class CaveDustPlumeParticle extends TextureSheetParticle {
     @Override
     public void tick() {
         super.tick();
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) {
+        CaveDustParticleContext.PlayerSnapshot player = CaveDustParticleContext.player();
+        if (!player.available()) {
             return;
         }
-        Vec3 position = new Vec3(this.x, this.y, this.z);
-        double distance = position.distanceTo(player.getEyePosition());
+        double distance = Math.sqrt(square(this.x - player.eyeX())
+                + square(this.y - player.eyeY())
+                + square(this.z - player.eyeZ()));
         this.alpha = Math.max(-1.0F, Math.min(1.0F, (float) (distance / 50.0D - 1.0D)));
         if (this.alpha < 0.001F) {
             this.remove();
+            return;
         }
         this.alpha -= 0.00005F;
+    }
+
+    private static double square(double value) {
+        return value * value;
     }
 
     @Override
