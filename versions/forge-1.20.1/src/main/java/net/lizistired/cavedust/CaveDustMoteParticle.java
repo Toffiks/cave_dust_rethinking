@@ -54,7 +54,7 @@ final class CaveDustMoteParticle extends TextureSheetParticle {
 
         if (environmentCheckDelay-- <= 0) {
             CaveDustParticleContext.EnvironmentSample environment =
-                    CaveDustParticleContext.environmentAt(this.x, this.y, this.z);
+                    CaveDustParticleContext.environmentAt(this.level, this.x, this.y, this.z);
             if (environment.available()) {
                 cachedSeesSky = environment.seesSky();
                 cachedHeatStrength = environment.heatStrength();

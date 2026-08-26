@@ -3,12 +3,13 @@ package net.lizistired.cavedust;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-@Mod(CaveDustMod.MOD_ID)
+@Mod(value = CaveDustMod.MOD_ID, dist = Dist.CLIENT)
 public final class CaveDustMod {
     public static final String MOD_ID = "cavedust";
 

@@ -9,9 +9,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Publishes main-thread snapshots for particles and shares block-environment
@@ -20,17 +21,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class CaveDustParticleContext {
     private static final int CACHE_LIFETIME_TICKS = 5;
     private static final int MAX_REQUESTS_PER_TICK = 2048;
+    private static final int MAX_QUEUED_REQUESTS = MAX_REQUESTS_PER_TICK * 2;
     private static final EnvironmentSample EMPTY_ENVIRONMENT = new EnvironmentSample(false, false, 0.0D);
     private static final PlayerSnapshot NO_PLAYER = new PlayerSnapshot(
             false, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
 
     private static final Map<Long, CacheEntry> ENVIRONMENT = new ConcurrentHashMap<>();
-    private static final Set<Long> REQUESTED = ConcurrentHashMap.newKeySet();
-    private static final ConcurrentLinkedQueue<EnvironmentRequest> REQUESTS = new ConcurrentLinkedQueue<>();
+    private static final Set<EnvironmentRequestKey> REQUESTED = ConcurrentHashMap.newKeySet();
+    private static final Queue<EnvironmentRequest> REQUESTS = new ArrayBlockingQueue<>(MAX_QUEUED_REQUESTS);
 
     private static volatile PlayerSnapshot playerSnapshot = NO_PLAYER;
     private static volatile long clientTick;
-    private static ClientLevel activeLevel;
+    private static volatile long sessionGeneration;
+    private static volatile boolean sessionActive;
+    private static volatile int minimumBuildHeight = Integer.MAX_VALUE;
+    private static volatile int maximumBuildHeight = Integer.MIN_VALUE;
+    private static volatile ClientLevel activeLevel;
 
     private CaveDustParticleContext() {
     }
@@ -44,11 +50,7 @@ final class CaveDustParticleContext {
         }
 
         if (activeLevel != level) {
-            ENVIRONMENT.clear();
-            REQUESTED.clear();
-            REQUESTS.clear();
-            activeLevel = level;
-            clientTick = 0L;
+            startSession(level);
         }
 
         clientTick++;
@@ -65,8 +67,12 @@ final class CaveDustParticleContext {
             if (request == null) {
                 break;
             }
+            if (request.key().sessionGeneration() != sessionGeneration) {
+                REQUESTED.remove(request.key());
+                continue;
+            }
             EnvironmentSample sample = sampleEnvironment(level, cursor, request.x(), request.y(), request.z());
-            ENVIRONMENT.put(request.key(), new CacheEntry(sample, clientTick + CACHE_LIFETIME_TICKS));
+            ENVIRONMENT.put(request.key().blockPosition(), new CacheEntry(sample, clientTick + CACHE_LIFETIME_TICKS));
             REQUESTED.remove(request.key());
         }
 
@@ -78,27 +84,53 @@ final class CaveDustParticleContext {
 
     static void clear() {
         playerSnapshot = NO_PLAYER;
+        if (activeLevel == null && !sessionActive) {
+            return;
+        }
+        startSession(null);
+    }
+
+    private static void startSession(ClientLevel level) {
         activeLevel = null;
-        clientTick = 0L;
+        sessionActive = false;
+        long nextSession = sessionGeneration + 1L;
+        sessionGeneration = nextSession == 0L ? 1L : nextSession;
         ENVIRONMENT.clear();
         REQUESTED.clear();
         REQUESTS.clear();
+        clientTick = 0L;
+        if (level != null) {
+            minimumBuildHeight = level.getMinBuildHeight();
+            maximumBuildHeight = level.getMaxBuildHeight();
+            activeLevel = level;
+            sessionActive = true;
+        } else {
+            minimumBuildHeight = Integer.MAX_VALUE;
+            maximumBuildHeight = Integer.MIN_VALUE;
+        }
     }
 
     static PlayerSnapshot player() {
         return playerSnapshot;
     }
 
-    static EnvironmentSample environmentAt(double x, double y, double z) {
+    static EnvironmentSample environmentAt(ClientLevel requesterLevel, double x, double y, double z) {
+        long generation = sessionGeneration;
         int blockX = (int) Math.floor(x);
         int blockY = (int) Math.floor(y);
         int blockZ = (int) Math.floor(z);
-        long key = BlockPos.asLong(blockX, blockY, blockZ);
-        CacheEntry entry = ENVIRONMENT.get(key);
+        if (!sessionActive || requesterLevel != activeLevel
+                || blockY < minimumBuildHeight || blockY >= maximumBuildHeight) {
+            return EMPTY_ENVIRONMENT;
+        }
+
+        long blockPosition = BlockPos.asLong(blockX, blockY, blockZ);
+        CacheEntry entry = ENVIRONMENT.get(blockPosition);
         boolean expired = entry == null || entry.expiresAt() <= clientTick;
         if (expired) {
-            if (REQUESTED.add(key)) {
-                REQUESTS.offer(new EnvironmentRequest(key, blockX, blockY, blockZ));
+            EnvironmentRequestKey key = new EnvironmentRequestKey(generation, blockPosition);
+            if (REQUESTED.add(key) && !REQUESTS.offer(new EnvironmentRequest(key, blockX, blockY, blockZ))) {
+                REQUESTED.remove(key);
             }
         }
         return expired ? EMPTY_ENVIRONMENT : entry.sample();
@@ -119,6 +151,9 @@ final class CaveDustParticleContext {
     }
 
     private static double heatValueAt(ClientLevel level, BlockPos.MutableBlockPos cursor, int x, int y, int z) {
+        if (y < minimumBuildHeight || y >= maximumBuildHeight) {
+            return 0.0D;
+        }
         cursor.set(x, y, z);
         BlockState state = level.getBlockState(cursor);
         if (state.is(Blocks.LAVA)) return 0.4D;
@@ -138,7 +173,10 @@ final class CaveDustParticleContext {
     record EnvironmentSample(boolean available, boolean seesSky, double heatStrength) {
     }
 
-    private record EnvironmentRequest(long key, int x, int y, int z) {
+    private record EnvironmentRequest(EnvironmentRequestKey key, int x, int y, int z) {
+    }
+
+    private record EnvironmentRequestKey(long sessionGeneration, long blockPosition) {
     }
 
     private record CacheEntry(EnvironmentSample sample, long expiresAt) {

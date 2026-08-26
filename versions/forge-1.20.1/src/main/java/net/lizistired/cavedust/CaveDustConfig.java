@@ -65,7 +65,6 @@ final class CaveDustConfig {
                 upperLimit = getFloat(values, "upperLimit", upperLimit);
                 lowerLimit = getFloat(values, "lowerLimit", lowerLimit);
                 particleMultiplier = getInt(values, "particleMultiplier", particleMultiplier);
-                listNumber = getInt(values, "listNumber", listNumber);
                 newId = getString(values, "newId", getString(values, "particle", newId));
                 needsSave = values.has("height")
                         || values.has("velocityRandomness")
@@ -95,7 +94,6 @@ final class CaveDustConfig {
         values.addProperty("upperLimit", upperLimit);
         values.addProperty("lowerLimit", lowerLimit);
         values.addProperty("particleMultiplier", particleMultiplier);
-        values.addProperty("listNumber", listNumber);
         values.addProperty("newId", newId);
         Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try {

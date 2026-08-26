@@ -7,7 +7,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -127,6 +126,9 @@ public final class CaveDustClient {
         int spawnX = origin.getX() + (int) (radius * Math.sin(polar) * Math.cos(azimuth));
         int spawnY = origin.getY() + (int) (radius * Math.sin(polar) * Math.sin(azimuth));
         int spawnZ = origin.getZ() + (int) (radius * Math.cos(polar));
+        if (spawnY < client.level.getMinBuildHeight() || spawnY >= client.level.getMaxBuildHeight()) {
+            return;
+        }
         double x = spawnX + RANDOM.nextFloat();
         double y = spawnY + RANDOM.nextFloat();
         double z = spawnZ + RANDOM.nextFloat();
@@ -138,10 +140,6 @@ public final class CaveDustClient {
         }
 
         client.level.addParticle(particle, x, y, z, 0.0D, 0.0D, 0.0D);
-    }
-
-    static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(CaveDustMod.MOD_ID, path);
     }
 
     static CaveDustConfig config() {

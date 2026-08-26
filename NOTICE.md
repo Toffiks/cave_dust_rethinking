@@ -8,4 +8,4 @@ Cave Dust Rethinking is a modified, unofficial fork of Cave Dust by LizIsTired.
 
 The source code in `versions/` includes files derived from the original project as well as modifications and loader/version adaptations maintained by Toffiks. The covered source code is made available under the Mozilla Public License 2.0. A copy of that license is included in the repository as `LICENSE`.
 
-The principal fork changes are described in `CHANGES.md`. Existing copyright and license notices remain applicable. This fork is not endorsed by or affiliated with the original author.
+Existing copyright and license notices remain applicable. This fork is not endorsed by or affiliated with the original author.

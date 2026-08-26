@@ -113,6 +113,10 @@ public final class CaveDustClient implements ClientModInitializer {
         double z = spawnZ + RANDOM.nextFloat();
 
         BlockPos particlePosition = BlockPos.containing(x, y, z);
+        if (particlePosition.getY() < client.level.getMinY()
+                || particlePosition.getY() >= client.level.getMaxY()) {
+            return;
+        }
         var state = client.level.getBlockState(particlePosition);
         if (!state.isAir() || !state.getFluidState().isEmpty()) {
             return;

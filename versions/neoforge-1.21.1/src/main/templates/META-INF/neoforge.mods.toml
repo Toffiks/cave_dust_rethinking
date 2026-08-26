@@ -43,8 +43,6 @@ logoFile="icon.png"
 # The authors of the mod, displayed in the mod UI (optional)
 authors="LizIsTired, Toffiks"
 
-clientSideOnly=true
-
 # The description text for the mod (multi line!) (#mandatory)
 description='''
 Adds atmospheric cave dust particles whose density scales with depth.

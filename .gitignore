@@ -3,6 +3,9 @@
 **/.gradle/
 **/build/
 **/run/
+**/run-data/
+**/repo/
+**/mcmodsrepo/
 
 # IDE files
 .idea/
