@@ -2,15 +2,12 @@
 package net.lizistired.cavedust;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
-import net.minecraft.core.particles.SimpleParticleType;
 
 final class CaveDustPlumeParticle extends TextureSheetParticle {
-    private CaveDustPlumeParticle(ClientLevel level, double x, double y, double z,
+    CaveDustPlumeParticle(ClientLevel level, double x, double y, double z,
                                   double velocityX, double velocityY, double velocityZ,
                                   SpriteSet sprites) {
         super(level, x, y, z);
@@ -51,18 +48,4 @@ final class CaveDustPlumeParticle extends TextureSheetParticle {
         return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    static final class Provider implements ParticleProvider<SimpleParticleType> {
-        private final SpriteSet sprites;
-
-        Provider(SpriteSet sprites) {
-            this.sprites = sprites;
-        }
-
-        @Override
-        public Particle createParticle(SimpleParticleType type, ClientLevel level,
-                                       double x, double y, double z,
-                                       double velocityX, double velocityY, double velocityZ) {
-            return new CaveDustPlumeParticle(level, x, y, z, velocityX, velocityY, velocityZ, sprites);
-        }
-    }
 }

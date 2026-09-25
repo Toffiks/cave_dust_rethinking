@@ -2,12 +2,8 @@
 package net.lizistired.cavedust;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.particle.SpriteSet;
-import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.util.RandomSource;
 
 /** The small, long-lived mote used by Cave Dust 3.1.0. */
 final class CaveDustMoteParticle extends SingleQuadParticle {
@@ -18,7 +14,7 @@ final class CaveDustMoteParticle extends SingleQuadParticle {
     private boolean cachedSeesSky;
     private double cachedHeatStrength;
 
-    private CaveDustMoteParticle(ClientLevel level, double x, double y, double z,
+    CaveDustMoteParticle(ClientLevel level, double x, double y, double z,
                                  double velocityX, double velocityY, double velocityZ,
                                  SpriteSet sprites) {
         super(level, x, y, z, sprites.first());
@@ -96,19 +92,4 @@ final class CaveDustMoteParticle extends SingleQuadParticle {
         return Layer.TRANSLUCENT;
     }
 
-    static final class Provider implements ParticleProvider<SimpleParticleType> {
-        private final SpriteSet sprites;
-
-        Provider(SpriteSet sprites) {
-            this.sprites = sprites;
-        }
-
-        @Override
-        public Particle createParticle(SimpleParticleType type, ClientLevel level,
-                                       double x, double y, double z,
-                                       double velocityX, double velocityY, double velocityZ,
-                                       RandomSource random) {
-            return new CaveDustMoteParticle(level, x, y, z, velocityX, velocityY, velocityZ, sprites);
-        }
-    }
 }

@@ -11,7 +11,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue.svg"></a>
   <img alt="Fabric, Forge and NeoForge" src="https://img.shields.io/badge/Fabric%20%7C%20Forge%20%7C%20NeoForge-8a6d3b">
-  <img alt="Version 3.3.1" src="https://img.shields.io/badge/version-3.3.1-62b47a">
+  <img alt="Version 3.4.0" src="https://img.shields.io/badge/version-3.4.0-62b47a">
 </p>
 
 Cave Dust Rethinking adds subtle dust particles to underground spaces. Dust becomes denser with depth, reacts to nearby player movement, and rises around heat sources such as lava, magma blocks, campfires, and torches.
@@ -28,7 +28,7 @@ This is an unofficial rework of [Cave Dust by LizIsTired](https://github.com/Liz
 - Smooth density changes when entering or leaving caves.
 - Configurable amount, radius, height range, and particle type.
 - English and Russian translations.
-- Client-side only.
+- Client-side only; friends joining your world do not need to install the mod.
 
 ## Versions
 

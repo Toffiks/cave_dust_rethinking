@@ -14,10 +14,10 @@ final class CaveDustConfigScreen extends Screen {
     private final Screen parent;
     private final CaveDustConfig config;
 
-    CaveDustConfigScreen(Screen parent) {
+    CaveDustConfigScreen(Screen parent, CaveDustConfig config) {
         super(Component.translatable("menu.cavedust.title"));
         this.parent = parent;
-        this.config = CaveDustClient.config();
+        this.config = config;
     }
 
     @Override

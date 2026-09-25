@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'net.lizistired'
-version = findProperty('mod_version') ?: '3.3.1'
+version = findProperty('mod_version') ?: '3.4.0'
 
 tasks.register('supportedVersions') {
     group = 'help'
@@ -16,5 +16,88 @@ tasks.register('supportedVersions') {
         println 'neoforge/1.21.1'
         println 'neoforge/26.1.2'
         println 'neoforge/26.3'
+        println 'universal/26.3 (Fabric + NeoForge)'
+    }
+}
+
+// The 26.3 builds use the same official Minecraft names. Keep their loader
+// entrypoints separate and package the byte-identical gameplay classes once.
+def fabric26_3 = file('fabric/26.3')
+def neoForge26_3 = file('neoforge/26.3')
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+
+def buildFabric26_3 = tasks.register('buildFabric26_3', Exec) {
+    group = 'build'
+    workingDir fabric26_3
+    commandLine(isWindows ? ['cmd', '/c', 'gradlew.bat', 'build', '--no-daemon', '--max-workers=2']
+            : ['./gradlew', 'build', '--no-daemon', '--max-workers=2'])
+}
+
+def buildNeoForge26_3 = tasks.register('buildNeoForge26_3', Exec) {
+    group = 'build'
+    workingDir neoForge26_3
+    commandLine(isWindows ? ['cmd', '/c', 'gradlew.bat', 'build', '--no-daemon', '--max-workers=2']
+            : ['./gradlew', 'build', '--no-daemon', '--max-workers=2'])
+}
+
+def loaderVersion = { projectDirectory ->
+    def properties = new Properties()
+    new File(projectDirectory, 'gradle.properties').withInputStream { properties.load(it) }
+    properties.getProperty('mod_version')
+}
+def fabricJar = providers.provider {
+    file("${fabric26_3}/build/libs/cave_dust_rethinking-${loaderVersion(fabric26_3)}.jar")
+}
+def neoForgeJar = providers.provider {
+    file("${neoForge26_3}/build/libs/cave_dust_rethinking-${loaderVersion(neoForge26_3)}.jar")
+}
+
+def verifySharedClasses = tasks.register('verifySharedClasses26_3') {
+    group = 'verification'
+    dependsOn buildFabric26_3, buildNeoForge26_3
+    doLast {
+        def fabric = new java.util.zip.ZipFile(fabricJar.get())
+        def neoForge = new java.util.zip.ZipFile(neoForgeJar.get())
+        try {
+            if (fabric.getEntry('fabric.mod.json') == null ||
+                    neoForge.getEntry('META-INF/neoforge.mods.toml') == null ||
+                    neoForge.getEntry('net/lizistired/cavedust/CaveDustNeoForgeClient.class') == null) {
+                throw new GradleException('A required 26.3 loader entry is missing')
+            }
+            neoForge.entries().each { entry ->
+                def path = entry.name
+                if (!path.startsWith('net/lizistired/cavedust/') || !path.endsWith('.class') ||
+                        path.startsWith('net/lizistired/cavedust/CaveDustNeoForgeClient') ||
+                        path == 'net/lizistired/cavedust/CaveDustMod.class') {
+                    return
+                }
+                def fabricEntry = fabric.getEntry(path)
+                if (fabricEntry == null || !java.util.Arrays.equals(
+                        fabric.getInputStream(fabricEntry).withCloseable { it.readAllBytes() },
+                        neoForge.getInputStream(entry).withCloseable { it.readAllBytes() })) {
+                    throw new GradleException("Shared 26.3 class differs between loaders: ${path}")
+                }
+            }
+        } finally {
+            fabric.close()
+            neoForge.close()
+        }
+    }
+}
+
+tasks.register('universal26_3', Zip) {
+    group = 'build'
+    description = 'Builds one client-side 26.3 JAR for Fabric and NeoForge.'
+    dependsOn verifySharedClasses
+    archiveFileName = "cave_dust_rethinking-${project.version}+26.3-fabric-neoforge.jar"
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+
+    // Preserve Fabric Loom's client-only manifest and resources.
+    from({ zipTree(fabricJar.get()) })
+    // The NeoForge bootstrap is the only loader-specific bytecode added here.
+    from({ zipTree(neoForgeJar.get()) }) {
+        include 'META-INF/neoforge.mods.toml'
+        include 'net/lizistired/cavedust/CaveDustNeoForgeClient*.class'
     }
 }

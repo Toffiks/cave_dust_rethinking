@@ -21,13 +21,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Loads, validates and atomically saves the client-side Cave Dust settings. */
 final class CaveDustConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaveDustMod.MOD_ID);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String DEFAULT_PARTICLE_ID = "cavedust:cave_dust_mote";
+    static final String MOTE_PARTICLE_ID = "cavedust:cave_dust_mote";
+    static final String PLUME_PARTICLE_ID = "cavedust:cave_dust_plume";
+    private static final String DEFAULT_PARTICLE_ID = MOTE_PARTICLE_ID;
 
     private final Path path;
     private int width = 10;
@@ -156,6 +159,9 @@ final class CaveDustConfig {
     }
 
     ParticleOptions particle() {
+        if (isLocalParticle(newId)) {
+            return null;
+        }
         if (selectedParticle != null) {
             return selectedParticle;
         }
@@ -170,13 +176,8 @@ final class CaveDustConfig {
         LOGGER.warn("Unknown or parameterized particle '{}'; falling back to {}", newId, DEFAULT_PARTICLE_ID);
         selectDefaultParticle();
         dirty = true;
-        type = ForgeRegistries.PARTICLE_TYPES.getValue(ResourceLocation.tryParse(newId));
-        if (type instanceof ParticleOptions options) {
-            selectedParticle = options;
-            saveIfDirty();
-            return selectedParticle;
-        }
-        throw new IllegalStateException("Cave Dust particle type is not registered: " + newId);
+        saveIfDirty();
+        return null;
     }
 
     String particleName() {
@@ -189,7 +190,7 @@ final class CaveDustConfig {
             listNumber = (listNumber + 1) % particleIds.size();
             String candidate = particleIds.get(listNumber).toString();
             ParticleOptions options = resolveParticle(candidate);
-            if (options != null) {
+            if (isLocalParticle(candidate) || options != null) {
                 newId = candidate;
                 selectedParticle = options;
                 dirty = true;
@@ -259,7 +260,14 @@ final class CaveDustConfig {
     }
 
     private List<ResourceLocation> particleIds() {
-        return List.copyOf(BuiltInRegistries.PARTICLE_TYPE.keySet());
+        List<ResourceLocation> ids = new ArrayList<>(BuiltInRegistries.PARTICLE_TYPE.keySet());
+        ids.add(ResourceLocation.tryParse(MOTE_PARTICLE_ID));
+        ids.add(ResourceLocation.tryParse(PLUME_PARTICLE_ID));
+        return List.copyOf(ids);
+    }
+
+    private static boolean isLocalParticle(String id) {
+        return MOTE_PARTICLE_ID.equals(id) || PLUME_PARTICLE_ID.equals(id);
     }
 
     private int indexOfParticle(String id, List<ResourceLocation> particleIds) {
