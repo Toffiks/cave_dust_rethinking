@@ -1,0 +1,20 @@
+plugins {
+    id 'base'
+}
+
+group = 'net.lizistired'
+version = findProperty('mod_version') ?: '3.3.1'
+
+tasks.register('supportedVersions') {
+    group = 'help'
+    description = 'Lists the independent loader and Minecraft version projects.'
+    doLast {
+        println 'fabric/1.21.11'
+        println 'fabric/26.2'
+        println 'fabric/26.3'
+        println 'forge/1.20.1'
+        println 'neoforge/1.21.1'
+        println 'neoforge/26.1.2'
+        println 'neoforge/26.3'
+    }
+}
